@@ -14,17 +14,19 @@ import (
 
 const UcAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const LcAlphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+const maxDigitOrdinal = byte('z')
+const maxDigitValueB36 = 35
 
-var revAlphabet [256]uint64
+var revAlphabet [maxDigitOrdinal + 1]byte
 
 func init() {
 	for i := range revAlphabet {
-		revAlphabet[i] = 36
+		revAlphabet[i] = maxDigitValueB36 + 1
 	}
 	for i, c := range UcAlphabet {
-		revAlphabet[byte(c)] = uint64(i)
+		revAlphabet[byte(c)] = byte(i)
 		if c > '9' {
-			revAlphabet[byte(c)+32] = uint64(i)
+			revAlphabet[byte(c)+32] = byte(i)
 		}
 	}
 }
@@ -113,11 +115,11 @@ func DecodeString(s string) ([]byte, error) {
 	binu := make([]byte, (len(s)+3)*3)
 
 	for _, r := range s {
-		if revAlphabet[r] > 35 {
+		if r > rune(maxDigitOrdinal) || revAlphabet[r] > maxDigitValueB36 {
 			return nil, fmt.Errorf("invalid base36 character (%q)", r)
 		}
 
-		c = revAlphabet[r]
+		c = uint64(revAlphabet[r])
 
 		for j := len(outi) - 1; j >= 0; j-- {
 			t = uint64(outi[j])*36 + c
