@@ -10,13 +10,11 @@ package base36
 
 import (
 	"fmt"
-	"math"
 )
 
 const UcAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const LcAlphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
 
-var encExpansion int
 var revAlphabet [256]uint64
 
 func init() {
@@ -29,12 +27,6 @@ func init() {
 			revAlphabet[byte(c)+32] = uint64(i)
 		}
 	}
-
-	encExpansion = int(
-		math.Ceil(
-			math.Log(256) / math.Log(36),
-		),
-	)
 }
 
 // EncodeToStringUc encodes the given byte-buffer as base36 using [0-9A-Z] as
@@ -58,7 +50,9 @@ func encode(inBuf []byte, al string) string {
 		zcnt++
 	}
 
-	encSize := (inSize - zcnt) * encExpansion
+	// Really this is log(256)/log(36) or 1.55, but integer math is easier
+	// Use 2 as a constant and just overallocate
+	encSize := (inSize - zcnt) * 2
 
 	// Allocate one big buffer up front
 	// Note: pools *DO NOT* help, the overhead of zeroing the val-half (see below)
@@ -66,7 +60,7 @@ func encode(inBuf []byte, al string) string {
 	outBuf := make([]byte, (zcnt + encSize*2))
 
 	// use the second half for the temporary numeric buffer
-	val := outBuf[encSize+zcnt : encSize*2+zcnt]
+	val := outBuf[encSize+zcnt:]
 
 	high = encSize - 1
 	for _, b := range inBuf[zcnt:] {
@@ -128,7 +122,7 @@ func DecodeString(s string) ([]byte, error) {
 		for j := len(outi) - 1; j >= 0; j-- {
 			t = uint64(outi[j])*36 + c
 			c = (t >> 32)
-			outi[j] = uint32(t & math.MaxUint32)
+			outi[j] = uint32(t & 0xFFFFFFFF)
 		}
 
 	}
