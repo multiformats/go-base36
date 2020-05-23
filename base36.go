@@ -43,7 +43,7 @@ func encode(inBuf []byte, al string) string {
 
 	// As a polar opposite to the base58 implementation, using a uint32 here is
 	// significantly slower
-	var carry uint
+	var carry uint64
 
 	var encIdx, valIdx, zcnt, high int
 
@@ -67,8 +67,8 @@ func encode(inBuf []byte, al string) string {
 	high = encSize - 1
 	for _, b := range inBuf[zcnt:] {
 		valIdx = encSize - 1
-		for carry = uint(b); valIdx > high || carry != 0; valIdx-- {
-			carry += uint((val[valIdx])) * 256
+		for carry = uint64(b); valIdx > high || carry != 0; valIdx-- {
+			carry += uint64((val[valIdx])) * 256
 			val[valIdx] = byte(carry % 36)
 			carry /= 36
 		}
@@ -144,11 +144,10 @@ func DecodeString(s string) ([]byte, error) {
 		mask = 24
 	}
 
-	n := zcnt
-	for {
+	for n := zcnt; n < len(binu); n++ {
 		if binu[n] > 0 {
 			return binu[n-zcnt : cnt], nil
 		}
-		n++
 	}
+	return binu[:cnt], nil
 }
