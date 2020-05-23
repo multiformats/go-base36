@@ -80,11 +80,7 @@ func encode(inBuf []byte, al string) string {
 	vBuf := out[stopIdx-zcnt:]
 	bufsz = len(vBuf)
 	for idx = 0; idx < bufsz; idx++ {
-		if idx < zcnt {
-			out[idx] = '0'
-		} else {
-			out[idx] = al[vBuf[idx]]
-		}
+		out[idx] = al[vBuf[idx]]
 	}
 
 	return string(out[:bufsz])
@@ -119,7 +115,6 @@ func DecodeString(s string) ([]byte, error) {
 			c = (t >> 32)
 			outi[j] = uint32(t & 0xFFFFFFFF)
 		}
-
 	}
 
 	mask := (uint(len(s)%4) * 8)
@@ -138,10 +133,13 @@ func DecodeString(s string) ([]byte, error) {
 		mask = 24
 	}
 
-	for n := zcnt; n < len(binu); n++ {
-		if binu[n] > 0 {
-			return binu[n-zcnt : outidx], nil
+	// find the most significant byte post-decode, if any
+	for msb := zcnt; msb < outidx; msb++ {
+		if binu[msb] > 0 {
+			return binu[msb-zcnt : outidx : outidx], nil
 		}
 	}
-	return binu[:outidx], nil
+
+	// it's all zeroes
+	return binu[:outidx:outidx], nil
 }
