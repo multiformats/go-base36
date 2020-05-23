@@ -14,7 +14,7 @@ import (
 
 const UcAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const LcAlphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
-const maxDigitOrdinal = byte('z')
+const maxDigitOrdinal = 'z'
 const maxDigitValueB36 = 35
 
 var revAlphabet [maxDigitOrdinal + 1]byte
@@ -103,26 +103,23 @@ func DecodeString(s string) ([]byte, error) {
 		return nil, fmt.Errorf("can not decode zero-length string")
 	}
 
-	var zcnt int
-
-	for i := 0; i < len(s) && s[i] == '0'; i++ {
+	zcnt := 0
+	for zcnt < len(s) && s[zcnt] == '0' {
 		zcnt++
 	}
-
-	var t, c uint64
 
 	outi := make([]uint32, (len(s)+3)/4)
 	binu := make([]byte, (len(s)+3)*3)
 
 	for _, r := range s {
-		if r > rune(maxDigitOrdinal) || revAlphabet[r] > maxDigitValueB36 {
+		if r > maxDigitOrdinal || revAlphabet[r] > maxDigitValueB36 {
 			return nil, fmt.Errorf("invalid base36 character (%q)", r)
 		}
 
-		c = uint64(revAlphabet[r])
+		c := uint64(revAlphabet[r])
 
 		for j := len(outi) - 1; j >= 0; j-- {
-			t = uint64(outi[j])*36 + c
+			t := uint64(outi[j])*36 + c
 			c = (t >> 32)
 			outi[j] = uint32(t & 0xFFFFFFFF)
 		}
@@ -134,20 +131,21 @@ func DecodeString(s string) ([]byte, error) {
 		mask = 32
 	}
 	mask -= 8
-	var j, cnt int
-	for j, cnt = 0, 0; j < len(outi); j++ {
+
+	outidx := 0
+	for j := 0; j < len(outi); j++ {
 		for mask < 32 { // loop relies on uint overflow
-			binu[cnt] = byte(outi[j] >> mask)
+			binu[outidx] = byte(outi[j] >> mask)
 			mask -= 8
-			cnt++
+			outidx++
 		}
 		mask = 24
 	}
 
 	for n := zcnt; n < len(binu); n++ {
 		if binu[n] > 0 {
-			return binu[n-zcnt : cnt], nil
+			return binu[n-zcnt : outidx], nil
 		}
 	}
-	return binu[:cnt], nil
+	return binu[:outidx], nil
 }

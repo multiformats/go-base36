@@ -77,10 +77,13 @@ func TestPermute(t *testing.T) {
 }
 
 var benchmarkBuf [36]byte // typical CID size
+var benchmarkDecodeTgt string
+
 var benchmarkCodecs []string
 
 func init() {
 	rand.Read(benchmarkBuf[:])
+	benchmarkDecodeTgt = testEncoders[0](benchmarkBuf[:])
 }
 
 func BenchmarkRoundTrip(b *testing.B) {
@@ -120,10 +123,9 @@ func BenchmarkEncode(b *testing.B) {
 func BenchmarkDecode(b *testing.B) {
 	b.ResetTimer()
 
-	enc := testEncoders[0](benchmarkBuf[:])
 	b.Run("Decoding", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			DecodeString(enc)
+			DecodeString(benchmarkDecodeTgt)
 		}
 	})
 }
