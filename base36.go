@@ -41,58 +41,53 @@ func EncodeToStringLc(b []byte) string { return encode(b, LcAlphabet) }
 
 func encode(inBuf []byte, al string) string {
 
-	// As a polar opposite to the base58 implementation, using a uint32 here is
-	// significantly slower
-	var carry uint64
-
-	var encIdx, valIdx, zcnt, high int
-
-	inSize := len(inBuf)
-	for zcnt < inSize && inBuf[zcnt] == 0 {
+	bufsz := len(inBuf)
+	zcnt := 0
+	for zcnt < bufsz && inBuf[zcnt] == 0 {
 		zcnt++
 	}
 
-	// Really this is log(256)/log(36) or 1.55, but integer math is easier
-	// Use 2 as a constant and just overallocate
-	encSize := (inSize - zcnt) * 2
+	// It is crucial to make this as short as possible, especially for
+	// the usual case of CIDs.
+	bufsz = zcnt +
+		// This is an integer simplification of
+		// ceil(log(256)/log(36))
+		(bufsz-zcnt)*277/179 + 1
 
-	// Allocate one big buffer up front
-	// Note: pools *DO NOT* help, the overhead of zeroing the val-half (see below)
+	// Note: pools *DO NOT* help, the overhead of zeroing
 	// kills any performance gain to be had
-	outBuf := make([]byte, (zcnt + encSize*2))
+	out := make([]byte, bufsz)
 
-	// use the second half for the temporary numeric buffer
-	val := outBuf[encSize+zcnt:]
+	var idx, stopIdx int
+	var carry uint32
 
-	high = encSize - 1
+	stopIdx = bufsz - 1
 	for _, b := range inBuf[zcnt:] {
-		valIdx = encSize - 1
-		for carry = uint64(b); valIdx > high || carry != 0; valIdx-- {
-			carry += uint64((val[valIdx])) * 256
-			val[valIdx] = byte(carry % 36)
+		idx = bufsz - 1
+		for carry = uint32(b); idx > stopIdx || carry != 0; idx-- {
+			carry += uint32((out[idx])) * 256
+			out[idx] = byte(carry % 36)
 			carry /= 36
 		}
-		high = valIdx
+		stopIdx = idx
 	}
 
-	// Reset the value index to the first significant value position
-	for valIdx = 0; valIdx < encSize && val[valIdx] == 0; valIdx++ {
+	// Determine the additional "zero-gap" in the buffer (aside from zcnt)
+	for stopIdx = zcnt; stopIdx < bufsz && out[stopIdx] == 0; stopIdx++ {
 	}
 
-	// Now write the known-length result to first half of buffer
-	encSize += zcnt - valIdx
-
-	for encIdx = 0; encIdx < zcnt; encIdx++ {
-		outBuf[encIdx] = '0'
+	// Now encode the values with actual alphabet in-place
+	vBuf := out[stopIdx-zcnt:]
+	bufsz = len(vBuf)
+	for idx = 0; idx < bufsz; idx++ {
+		if idx < zcnt {
+			out[idx] = '0'
+		} else {
+			out[idx] = al[vBuf[idx]]
+		}
 	}
 
-	for encIdx < encSize {
-		outBuf[encIdx] = al[val[valIdx]]
-		encIdx++
-		valIdx++
-	}
-
-	return string(outBuf[:encSize])
+	return string(out[:bufsz])
 }
 
 // DecodeString takes a base36 encoded string and returns a slice of the decoded
