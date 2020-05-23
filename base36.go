@@ -103,8 +103,9 @@ func DecodeString(s string) ([]byte, error) {
 		zcnt++
 	}
 
-	outi := make([]uint32, (len(s)+3)/4)
-	binu := make([]byte, (len(s)+3)*3)
+	// the 32bit algo stretches the result up to 2 times
+	binu := make([]byte, 2*(((len(s))*179/277)+1)) // no more than 84 bytes when len(s) <= 64
+	outi := make([]uint32, (len(s)+3)/4)           // no more than 16 bytes when len(s) <= 64
 
 	for _, r := range s {
 		if r > maxDigitOrdinal || revAlphabet[r] > maxDigitValueB36 {
