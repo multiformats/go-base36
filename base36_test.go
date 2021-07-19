@@ -79,8 +79,6 @@ func TestPermute(t *testing.T) {
 var benchmarkBuf [36]byte // typical CID size
 var benchmarkDecodeTgt string
 
-var benchmarkCodecs []string
-
 func init() {
 	rand.Read(benchmarkBuf[:])
 	benchmarkDecodeTgt = testEncoders[0](benchmarkBuf[:])
