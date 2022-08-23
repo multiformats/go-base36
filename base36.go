@@ -1,7 +1,5 @@
 /*
-
 Package base36 provides a reasonably fast implementation of a binary base36 codec.
-
 */
 package base36
 
